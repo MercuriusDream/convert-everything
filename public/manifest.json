@@ -1,0 +1,19 @@
+{
+  "name": "Convert Everything",
+  "short_name": "Convert",
+  "description": "Convert everything to everything — text, data, images, media, and more. No ads, no tracking, 100% local.",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#faf8f5",
+  "theme_color": "#faf8f5",
+  "categories": ["developer", "utilities", "productivity"],
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
