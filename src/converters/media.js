@@ -2,7 +2,6 @@
 // For more complex conversions, we use ffmpeg.wasm loaded on demand
 
 let ffmpegInstance = null
-let ffmpegLoading = false
 let ffmpegReady = false
 let ffmpegLoadPromise = null
 let ffmpegLoadListeners = []
@@ -22,7 +21,6 @@ async function getFFmpeg() {
 
   if (ffmpegLoadPromise) return ffmpegLoadPromise
 
-  ffmpegLoading = true
   notifyLoadListeners('downloading')
   ffmpegLoadPromise = (async () => {
     const { FFmpeg } = await import('@ffmpeg/ffmpeg')
@@ -49,7 +47,6 @@ async function getFFmpeg() {
     notifyLoadListeners('error')
     throw error
   } finally {
-    ffmpegLoading = false
     ffmpegLoadPromise = null
   }
 }

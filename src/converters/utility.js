@@ -1804,7 +1804,7 @@ export const utilityConverters = [
     category: 'utility',
     description: 'Validate credit card numbers using the Luhn algorithm',
     convert: (input) => {
-      const num = input.trim().replace(/[\s\-]/g, '')
+      const num = input.trim().replace(/[\s-]/g, '')
       if (!num) return '(enter a number to validate)'
       if (!/^\d+$/.test(num)) return '(enter digits only — spaces and dashes are allowed)'
       let sum = 0, isEven = false
@@ -2077,7 +2077,7 @@ export const utilityConverters = [
       const hasUpper = /[A-Z]/.test(input)
       const hasDigit = /[0-9]/.test(input)
       const hasSymbol = /[^a-zA-Z0-9]/.test(input)
-      const hasExtended = /[^\x00-\x7F]/.test(input)
+      const hasExtended = [...input].some((char) => char.codePointAt(0) > 0x7F)
       if (hasLower) poolSize += 26
       if (hasUpper) poolSize += 26
       if (hasDigit) poolSize += 10
@@ -3337,7 +3337,7 @@ export const utilityConverters = [
       })()
       const known = [distKm !== null, timeHr !== null, speedKph !== null].filter(Boolean).length
       if (known < 2) return '(enter two values — e.g. "120km 1.5h" or "60mph 2h" or "200km 80kph")'
-      let solveFor, result, resultKm, resultHr, resultKph
+      let solveFor, resultKm, resultHr, resultKph
       if (distKm === null) {
         resultKm = speedKph * timeHr
         solveFor = 'distance'
@@ -3492,7 +3492,6 @@ export const utilityConverters = [
       const [watts, hours, days = 1, rate = 0.13] = parts
       const kwhPerDay = (watts * hours) / 1000
       const kwhTotal = kwhPerDay * days
-      const costPerDay = kwhPerDay * rate
       const costTotal = kwhTotal * rate
       const costMonth = kwhPerDay * 30 * rate
       const costYear = kwhPerDay * 365 * rate
@@ -3568,7 +3567,7 @@ export const utilityConverters = [
     description: 'Classify blood pressure reading. Enter systolic/diastolic like "120/80" or separate "120 80".',
     category: 'utility',
     convert: (input) => {
-      const m = input.match(/(\d+)\s*[\/\s]\s*(\d+)/)
+      const m = input.match(/(\d+)\s*[/\s]\s*(\d+)/)
       if (!m) return '(enter blood pressure as systolic/diastolic, e.g. 120/80)'
       const sys = parseInt(m[1])
       const dia = parseInt(m[2])
@@ -3918,13 +3917,12 @@ export const utilityConverters = [
       for (const line of lines) {
         const parts = line.trim().split(/\s+/)
         const qty = parseFloat(parts[0])
-        let unitGrams = 100, unitStr = ''
+        let unitGrams = 100
         let foodStart = 1
         if (!isNaN(qty) && parts.length > 1) {
           const possibleUnit = parts[1].toLowerCase().replace(/s$/, '')
           if (unitToGrams[possibleUnit] || unitToGrams[parts[1].toLowerCase()]) {
             unitGrams = unitToGrams[parts[1].toLowerCase()] || unitToGrams[possibleUnit]
-            unitStr = parts[1]
             foodStart = 2
           } else {
             unitGrams = 1 // just count items
@@ -3962,7 +3960,6 @@ export const utilityConverters = [
     convert: (input) => {
       const s = input.trim().toLowerCase()
       // Metric: km + L/100km
-      const metricMatch = s.match(/([\d.]+)\s*km.*([\d.]+)\s*(?:per\s*liter|\/l|\$|€|£|¥)?([\d.]+)\s*(?:l\/100|l100|liters?\s*per\s*100)/)
       const km = parseFloat(s.match(/([\d.]+)\s*km/)?.[1])
       const lPer100 = parseFloat(s.match(/([\d.]+)\s*(?:l\/100|l100|liters?\s*per\s*100)/)?.[1])
       const pricePerL = parseFloat(s.match(/(?:price|cost|\$|€|£)?\s*([\d.]+)\s*(?:\/l|per\s*l)/)?.[1])
@@ -4089,7 +4086,6 @@ export const utilityConverters = [
         return { A: 'U', U: 'A', C: 'G', G: 'C', N: 'N' }[b] || b
       }).join('')
       const comp = complement(seq)
-      const revComp = complement(seq.split('').reverse().join('')).split('').reverse().join('').split('').reverse().join('')
       // Transcription (DNA → RNA)
       const rna = type === 'DNA' ? seq.replace(/T/g, 'U') : seq
       // Melting temperature (Wallace rule for ≤14bp, else GC method)

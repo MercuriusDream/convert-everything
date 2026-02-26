@@ -798,7 +798,7 @@ export const colorConverters = [
       }
       if (!/#?[0-9a-fA-F]{3,6}/.test(hex)) return '(enter a hex color, e.g. #4a90d9)'
       const rgb = hexToRgb(hex.startsWith('#') ? hex : '#' + hex)
-      const { h, s, l } = rgbToHsl(rgb.r, rgb.g, rgb.b)
+      const { h, s } = rgbToHsl(rgb.r, rgb.g, rgb.b)
       const steps = [50, 100, 200, 300, 400, 500, 600, 700, 800, 900]
       const lines = ['/* CSS Color Scale */', ':root {']
       for (const step of steps) {
@@ -884,7 +884,6 @@ export const colorConverters = [
         const rgb = hexToRgb(input_hex)
         const L = relativeLuminance(rgb)
         const perceivedL = L <= 0.008856 ? L * 903.3 : Math.pow(L, 1 / 3) * 116 - 16
-        const textOnBg = L > 0.179 ? '#000000' : '#ffffff'
         const textLabel = L > 0.179 ? 'Black text' : 'White text'
         const contrastWhite = (1.05) / (L + 0.05)
         const contrastBlack = (L + 0.05) / 0.05

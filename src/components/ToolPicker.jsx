@@ -88,7 +88,23 @@ function getTabForConverter(converter) {
   return toolCatToTab[converter.category] || 'utility'
 }
 
-function ToolPicker({
+function getInitialTab(mode, currentFormatValue, currentConverterValue) {
+  if (mode === 'to') return 'text'
+  if (currentConverterValue) {
+    const conv = converters.find(c => c.id === currentConverterValue)
+    if (conv) return getTabForConverter(conv)
+  }
+  if (currentFormatValue) return getTabForFormat(currentFormatValue)
+  return 'text'
+}
+
+function clampHighlightedIndex(index, length) {
+  if (index < 0) return index
+  if (length === 0) return -1
+  return index >= length ? length - 1 : index
+}
+
+function ToolPickerContent({
   open,
   onClose,
   onSelectFormat,
@@ -99,40 +115,25 @@ function ToolPicker({
   currentConverterValue,
 }) {
   const [query, setQuery] = useState('')
-  const [activeTab, setActiveTab] = useState('text')
+  const [activeTab, setActiveTab] = useState(() => getInitialTab(mode, currentFormatValue, currentConverterValue))
   const [highlighted, setHighlighted] = useState(-1)
   const searchRef = useRef(null)
   const listRef = useRef(null)
   const overlayRef = useRef(null)
   const tabsRef = useRef(null)
 
-  // Reset state when opened, auto-select tab
+  // On open, focus search and align scroll positions
   useEffect(() => {
-    if (open) {
-      setQuery('')
-      setHighlighted(-1)
-      let tab = 'text'
-      if (mode === 'to') {
-        tab = 'text'
-      } else if (currentConverterValue) {
-        const conv = converters.find(c => c.id === currentConverterValue)
-        if (conv) tab = getTabForConverter(conv)
-      } else if (currentFormatValue) {
-        tab = getTabForFormat(currentFormatValue)
+    if (listRef.current) listRef.current.scrollTop = 0
+    requestAnimationFrame(() => {
+      searchRef.current?.focus()
+      // Scroll the active tab button into view on mobile
+      if (tabsRef.current) {
+        const activeBtn = tabsRef.current.querySelector('.tool-picker-tab.active')
+        activeBtn?.scrollIntoView({ block: 'nearest', inline: 'center' })
       }
-      setActiveTab(tab)
-      // Reset scroll positions
-      if (listRef.current) listRef.current.scrollTop = 0
-      requestAnimationFrame(() => {
-        searchRef.current?.focus()
-        // Scroll the active tab button into view on mobile
-        if (tabsRef.current) {
-          const activeBtn = tabsRef.current.querySelector('.tool-picker-tab.active')
-          activeBtn?.scrollIntoView({ block: 'nearest', inline: 'center' })
-        }
-      })
-    }
-  }, [open, mode, currentFormatValue, currentConverterValue])
+    })
+  }, [])
 
   // Reset list scroll when switching tabs
   useEffect(() => {
@@ -235,14 +236,7 @@ function ToolPicker({
     return [...formatItems, ...toolItems]
   }, [open, mode, isSearchMode, toFlatFormats, searchFormats, searchTools, tabFlatFormats, tabTools])
 
-  // Clamp highlighted when flatItems shrinks
-  useEffect(() => {
-    setHighlighted(h => {
-      if (h < 0) return h
-      if (flatItems.length === 0) return -1
-      return h >= flatItems.length ? flatItems.length - 1 : h
-    })
-  }, [flatItems.length])
+  const clampedHighlighted = clampHighlightedIndex(highlighted, flatItems.length)
 
   // Pre-compute index maps for search mode
   const { searchFormatIndexMap, searchToolIndexMap } = useMemo(() => {
@@ -266,12 +260,12 @@ function ToolPicker({
 
   // Scroll highlighted item into view
   useEffect(() => {
-    if (highlighted < 0 || !listRef.current) return
+    if (clampedHighlighted < 0 || !listRef.current) return
     const items = listRef.current.querySelectorAll('[data-picker-item]')
-    if (items[highlighted]) {
-      items[highlighted].scrollIntoView({ block: 'nearest' })
+    if (items[clampedHighlighted]) {
+      items[clampedHighlighted].scrollIntoView({ block: 'nearest' })
     }
-  }, [highlighted])
+  }, [clampedHighlighted])
 
   const handleSelectFormat = useCallback((id) => {
     const list = getRecentFormats().filter(f => f !== id)
@@ -298,15 +292,20 @@ function ToolPicker({
       e.preventDefault()
       setHighlighted(h => {
         if (flatItems.length === 0) return -1
-        return Math.min(h + 1, flatItems.length - 1)
+        const clamped = clampHighlightedIndex(h, flatItems.length)
+        return Math.min(clamped + 1, flatItems.length - 1)
       })
     } else if (e.key === 'ArrowUp') {
       e.preventDefault()
-      setHighlighted(h => Math.max(h - 1, 0))
+      setHighlighted(h => {
+        if (flatItems.length === 0) return -1
+        const clamped = clampHighlightedIndex(h, flatItems.length)
+        return Math.max(clamped - 1, 0)
+      })
     } else if (e.key === 'Enter' || e.key === 'Tab') {
-      if (highlighted >= 0 && flatItems[highlighted]) {
+      if (clampedHighlighted >= 0 && flatItems[clampedHighlighted]) {
         e.preventDefault()
-        handleSelect(highlighted)
+        handleSelect(clampedHighlighted)
       } else if (flatItems.length === 1) {
         e.preventDefault()
         handleSelect(0)
@@ -385,7 +384,7 @@ function ToolPicker({
                     <div
                       key={`f-${f.id}`}
                       data-picker-item
-                      className={`tool-picker-format-item${f.id === currentFormatValue ? ' selected' : ''}${globalIdx === highlighted ? ' highlighted' : ''}`}
+                      className={`tool-picker-format-item${f.id === currentFormatValue ? ' selected' : ''}${globalIdx === clampedHighlighted ? ' highlighted' : ''}`}
                       onMouseDown={(e) => { e.preventDefault(); handleSelectFormat(f.id) }}
                       onMouseEnter={() => setHighlighted(globalIdx)}
                     >
@@ -405,7 +404,7 @@ function ToolPicker({
                     <div
                       key={`c-${c.id}`}
                       data-picker-item
-                      className={`tool-picker-tool-item${c.id === currentConverterValue ? ' selected' : ''}${globalIdx === highlighted ? ' highlighted' : ''}`}
+                      className={`tool-picker-tool-item${c.id === currentConverterValue ? ' selected' : ''}${globalIdx === clampedHighlighted ? ' highlighted' : ''}`}
                       onMouseDown={(e) => { e.preventDefault(); handleSelectConverter(c) }}
                       onMouseEnter={() => setHighlighted(globalIdx)}
                     >
@@ -434,7 +433,7 @@ function ToolPicker({
                     <div
                       key={f.id}
                       data-picker-item
-                      className={`tool-picker-format-item${f.id === currentFormatValue ? ' selected' : ''}${idx === highlighted ? ' highlighted' : ''}`}
+                      className={`tool-picker-format-item${f.id === currentFormatValue ? ' selected' : ''}${idx === clampedHighlighted ? ' highlighted' : ''}`}
                       onMouseDown={(e) => { e.preventDefault(); handleSelectFormat(f.id) }}
                       onMouseEnter={() => setHighlighted(idx)}
                     >
@@ -467,7 +466,7 @@ function ToolPicker({
                     <div
                       key={f.id}
                       data-picker-item
-                      className={`tool-picker-format-item${f.id === currentFormatValue ? ' selected' : ''}${idx === highlighted ? ' highlighted' : ''}`}
+                      className={`tool-picker-format-item${f.id === currentFormatValue ? ' selected' : ''}${idx === clampedHighlighted ? ' highlighted' : ''}`}
                       onMouseDown={(e) => { e.preventDefault(); handleSelectFormat(f.id) }}
                       onMouseEnter={() => setHighlighted(idx)}
                     >
@@ -497,7 +496,7 @@ function ToolPicker({
                     <div
                       key={c.id}
                       data-picker-item
-                      className={`tool-picker-tool-card${c.id === currentConverterValue ? ' selected' : ''}${idx === highlighted ? ' highlighted' : ''}`}
+                      className={`tool-picker-tool-card${c.id === currentConverterValue ? ' selected' : ''}${idx === clampedHighlighted ? ' highlighted' : ''}`}
                       data-category={c.category}
                       onMouseDown={(e) => { e.preventDefault(); handleSelectConverter(c) }}
                       onMouseEnter={() => setHighlighted(idx)}
@@ -517,6 +516,17 @@ function ToolPicker({
         )}
       </div>
     </div>
+  )
+}
+
+function ToolPicker(props) {
+  const { open, mode, currentFormatValue, currentConverterValue } = props
+  if (!open) return null
+  return (
+    <ToolPickerContent
+      key={`${mode}|${currentFormatValue || ''}|${currentConverterValue || ''}`}
+      {...props}
+    />
   )
 }
 

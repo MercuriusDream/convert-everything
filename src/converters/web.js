@@ -3078,7 +3078,7 @@ export const webConverters = [
     convert: (input) => {
       try {
         const data = JSON.parse(input.trim())
-        function inferSchema(val, key) {
+        function inferSchema(val) {
           if (val === null) return { type: 'null' }
           if (typeof val === 'boolean') return { type: 'boolean' }
           if (typeof val === 'number') return Number.isInteger(val) ? { type: 'integer' } : { type: 'number' }
@@ -3089,7 +3089,7 @@ export const webConverters = [
           }
           if (typeof val === 'object') {
             const props = {}
-            for (const [k, v] of Object.entries(val)) props[k] = inferSchema(v, k)
+            for (const [k, v] of Object.entries(val)) props[k] = inferSchema(v)
             return { type: 'object', properties: props, required: Object.keys(val) }
           }
           return {}
@@ -3701,7 +3701,7 @@ export const webConverters = [
         '':'(base)', da:'deca', h:'hecto', k:'kilo', M:'mega', G:'giga', T:'tera',
         P:'peta', E:'exa', Z:'zetta', Y:'yotta', R:'ronna', Q:'quetta',
       }
-      const m = input.trim().match(/^([\d.e+\-]+)\s*([a-zA-Zµ]*?)([a-zA-Zµ]+)\s+to\s+([a-zA-Zµ]*?)([a-zA-Zµ]+)$/i)
+      const m = input.trim().match(/^([\d.e+-]+)\s*([a-zA-Zµ]*?)([a-zA-Zµ]+)\s+to\s+([a-zA-Zµ]*?)([a-zA-Zµ]+)$/i)
       if (!m) return '(format: "1.5 km to m" or "500 mA to A")'
       const [, numStr, fromPre, fromUnit, toPre, toUnit] = m
       if (fromUnit.toLowerCase() !== toUnit.toLowerCase()) return `(units must match: "${fromUnit}" vs "${toUnit}")`
@@ -4130,9 +4130,9 @@ export const webConverters = [
     description: 'Escape special Markdown characters (adds backslashes before *, _, [, etc.)',
     placeholder: '# Hello *World* [link](url) `code` > quote',
     convert: (input) => {
-      const specialChars = /([\\`*_{}[\]()#+\-.!|])/g
+      const specialChars = /([\\`*_{}[\]()#+.!|-])/g
       const escaped = input.replace(specialChars, '\\$1')
-      const unescaped = input.replace(/\\([\\`*_{}[\]()#+\-.!|])/g, '$1')
+      const unescaped = input.replace(/\\([\\`*_{}[\]()#+.!|-])/g, '$1')
       if (escaped === input) {
         return ['No special characters to escape.', '', 'Unescaped version (removing existing backslashes):', unescaped].join('\n')
       }
@@ -4411,7 +4411,6 @@ export const webConverters = [
         return [`${code} ${name}`, `Category: ${category}`, '', desc].join('\n')
       }
       if (!isNaN(code)) {
-        const range = Math.floor(code / 100) * 100
         const nearby = Object.keys(statuses).filter(k => Math.floor(Number(k) / 100) === Math.floor(code / 100)).map(k => `  ${k}: ${statuses[k][0]}`).join('\n')
         return `Unknown status: ${code}\n\nCodes in ${Math.floor(code/100)}xx range:\n${nearby || '(none known)'}`
       }
@@ -4698,7 +4697,6 @@ export const webConverters = [
     category: 'web',
     convert: (input) => {
       const s = input.trim().toLowerCase()
-      const lines = input.split('\n').map(l => l.trim())
       // Parse fields
       const runtime = (['node', 'python', 'go', 'rust', 'java', 'deno', 'bun', 'php', 'ruby', 'nginx'].find(r => s.includes(r))) || 'node'
       const portMatch = input.match(/port\s*:?\s*(\d{2,5})/i) || input.match(/\b(\d{4,5})\b/)
@@ -4869,7 +4867,7 @@ CMD ["ruby", "app.rb"]`,
       }
       if (!pattern) return '(enter a regex pattern, e.g. /\\d+/g or \\d+)'
       const escaped = pattern.replace(/\\/g, '\\\\')
-      const g = flags.includes('g'), i = flags.includes('i'), m = flags.includes('m')
+      const i = flags.includes('i'), m = flags.includes('m')
       return [
         '// JavaScript',
         `const regex = /${pattern}/${flags}`,
@@ -5125,7 +5123,6 @@ CMD ["ruby", "app.rb"]`,
       const s = input.trim().toLowerCase()
       const runtime = (['node', 'python', 'go', 'rust', 'java', 'docker', 'bun', 'deno'].find(r => s.includes(r))) || 'node'
       const hasDeploy = s.includes('deploy')
-      const hasRelease = s.includes('release')
       const runtimeJobs = {
         node: `    - uses: actions/setup-node@v4
       with:

@@ -756,7 +756,7 @@ export const dataConverters = [
       const csvData = lines.slice(1).join('\n').trim()
       if (!csvData) return '(enter filter on first line, then CSV data)'
       const parseRow = line => {
-        const cells = [], out = []
+        const cells = []
         let inQ = false, cell = ''
         for (const ch of line) {
           if (ch === '"') { inQ = !inQ }

@@ -954,7 +954,7 @@ export const textConverters = [
       // Generate acronym from phrase
       const words = s.split(/\s+/).filter(Boolean)
       const acronym = words.map(w => w[0]?.toUpperCase() || '').join('')
-      const firstLetters = words.map((w, i) => `  ${w[0]?.toUpperCase() || '?'} — ${w}`).join('\n')
+      const firstLetters = words.map(w => `  ${w[0]?.toUpperCase() || '?'} — ${w}`).join('\n')
       return [
         `Phrase: ${s}`,
         `Acronym: ${acronym}`,
@@ -1373,7 +1373,7 @@ export const textConverters = [
       return [
         `Top ${sorted.length} words (${total} total, ${Object.keys(freq).length} unique):`,
         '',
-        ...sorted.map(([word, count], i) => {
+        ...sorted.map(([word, count]) => {
           const bar = bars[Math.min(7, Math.round(count / maxCount * 7))]
           const pct = (count / total * 100).toFixed(1)
           return `${bar} ${word.padEnd(20)} ${String(count).padStart(3)}×  ${pct}%`

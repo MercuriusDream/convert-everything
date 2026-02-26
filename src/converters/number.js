@@ -349,8 +349,8 @@ export const numberConverters = [
         { name: 'uint16', min: 0,                   max: 65535,              size: '2 bytes' },
         { name: 'int32',  min: -2147483648,         max: 2147483647,         size: '4 bytes' },
         { name: 'uint32', min: 0,                   max: 4294967295,         size: '4 bytes' },
-        { name: 'int64',  min: -9223372036854775808, max: 9223372036854775807, size: '8 bytes' },
-        { name: 'uint64', min: 0,                   max: 18446744073709551615, size: '8 bytes' },
+        { name: 'int64',  min: Number('-9223372036854775808'), max: Number('9223372036854775807'), size: '8 bytes' },
+        { name: 'uint64', min: 0,                   max: Number('18446744073709551615'), size: '8 bytes' },
       ]
       return types.map(({ name, min, max, size }) => {
         const fits = n >= min && n <= max
@@ -366,7 +366,7 @@ export const numberConverters = [
     placeholder: '1 2 10',
     convert: (input) => {
       const s = input.trim()
-      const geoMatch = s.match(/^([\d.e+\-]+)\s+\*([\d.e+\-]+)\s+(\d+)$/)
+      const geoMatch = s.match(/^([\d.e+-]+)\s+\*([\d.e+-]+)\s+(\d+)$/)
       if (geoMatch) {
         const start = parseFloat(geoMatch[1]), ratio = parseFloat(geoMatch[2]), count = parseInt(geoMatch[3], 10)
         if (isNaN(start) || isNaN(ratio) || isNaN(count) || count < 1 || count > 100) return '(format: "start *ratio count" e.g. "2 *3 6" for 2,6,18,54,162,486)'
@@ -409,7 +409,6 @@ export const numberConverters = [
       if (m) {
         const a = parseInt(m[1], 10), mod = parseInt(m[2], 10)
         function modInverse(a, m) {
-          const m0 = m
           let x0 = 0n, x1 = 1n
           let a0 = BigInt(((a % m) + m) % m), m0b = BigInt(m)
           if (m0b === 1n) return 0
@@ -621,9 +620,9 @@ export const numberConverters = [
     description: 'Perform arithmetic in binary — format: "1010 + 0110" or "1111 - 0011" or "1010 * 11"',
     placeholder: '1010 + 0110',
     convert: (input) => {
-      const m = input.trim().match(/^([01]+)\s*([+\-*\/])\s*([01]+)$/)
+      const m = input.trim().match(/^([01]+)\s*([+*/-])\s*([01]+)$/)
       if (!m) return '(format: "binary op binary" — e.g. "1010 + 0110")'
-      const a = parseInt(m[1], 2), b = parseInt(m[2+1-1] === '/' ? m[3] : m[3], 2)
+      const a = parseInt(m[1], 2)
       const op = m[2], bVal = parseInt(m[3], 2)
       let result, label
       switch (op) {
@@ -1462,7 +1461,7 @@ export const numberConverters = [
     convert: (input) => {
       const s = input.trim()
       // Auto-detect prefix notation
-      const prefixMatch = s.match(/^(0[bBoOxX][\da-fA-F]+)\s*([+\-*\/])\s*(0[bBoOxX][\da-fA-F]+)$/)
+      const prefixMatch = s.match(/^(0[bBoOxX][\da-fA-F]+)\s*([+*/-])\s*(0[bBoOxX][\da-fA-F]+)$/)
       if (prefixMatch) {
         const parseNum = (str) => {
           if (/^0[bB]/.test(str)) return { val: parseInt(str, 2), base: 2 }
@@ -1486,8 +1485,8 @@ export const numberConverters = [
         ].join('\n')
       }
       // "a op b base N" format
-      const baseMatch = s.match(/^(\w+)\s*([+\-*\/])\s*(\w+)\s+(?:base\s*|in\s*base\s*)?(\d+)$/i)
-      const hexMatch = s.match(/^(\w+)\s*([+\-*\/])\s*(\w+)\s+hex(?:adecimal)?$/i)
+      const baseMatch = s.match(/^(\w+)\s*([+*/-])\s*(\w+)\s+(?:base\s*|in\s*base\s*)?(\d+)$/i)
+      const hexMatch = s.match(/^(\w+)\s*([+*/-])\s*(\w+)\s+hex(?:adecimal)?$/i)
       const match = baseMatch || hexMatch
       if (match) {
         const base = hexMatch ? 16 : parseInt(match[4])
