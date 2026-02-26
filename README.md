@@ -11,16 +11,16 @@
   <img src="https://img.shields.io/badge/PWA-ready-5a0fc8?style=flat-square" alt="PWA" />
 </p>
 
-<h3 align="center">200+ converters · zero servers · 100% private</h3>
-
 <p align="center">
-  Text encodings · data formats · unit math · color spaces · image ops · media transcoding · PDF tools · dev utilities<br>
-  All in one place. All in your browser. All offline.
+  200+ converters for text, data, images, media, and more.<br>
+  All in your browser. No servers. No tracking. No ads.
 </p>
 
 ---
 
-### ⚡ &ensp; Get Running
+Convert Everything is a browser-based conversion toolkit that runs **entirely client-side**. Text encodings, structured data, unit math, color spaces, image ops, media transcoding, PDF tools, and developer utilities — all offline-capable, all private.
+
+### Get Started
 
 ```bash
 git clone https://github.com/MercuriusDream/convert-everything.git
@@ -28,55 +28,20 @@ cd convert-everything
 bun install && bun run dev
 ```
 
-> [Bun](https://bun.sh/) ≥ 1.3 &ensp;or&ensp; [Node.js](https://nodejs.org/) ≥ 18
+Requires [Bun](https://bun.sh/) ≥ 1.3 or [Node.js](https://nodejs.org/) ≥ 18.
 
----
+### Stack
 
-### 🔒 &ensp; Privacy by Design
+React 19 · Vite 7 · Vanilla CSS · pdf-lib · qrcode · FFmpeg WASM · GitHub Pages
 
-Every conversion runs **client-side** in your browser's JS runtime. Files never leave your device. No analytics, no trackers, no third-party scripts — just math.
+### Documentation
 
----
+Full docs live in [`docs/`](docs/) — [product overview](docs/01-product-overview.md), [architecture](docs/02-architecture.md), [converter catalog](docs/03-converter-catalog.md), [security & privacy](docs/06-security-and-privacy.md), [developer guide](docs/09-developer-guide.md), [contributing](docs/10-governance-and-contributing.md), [FAQ](docs/11-faq.md), and more.
 
-### 🏗️ &ensp; Built With
+### Contributing
 
-**React 19** · **Vite 7** · **Vanilla CSS** · **pdf-lib** · **qrcode** · **FFmpeg WASM** · **GitHub Pages**
+See [Contributing](docs/10-governance-and-contributing.md) and [Developer Guide](docs/09-developer-guide.md).
 
----
+### License
 
-### 📖 &ensp; Documentation
-
-Everything you need is in [`docs/`](docs/) — architecture, converter catalog, security model, developer guide, and more.
-
-| | |
-| :--- | :--- |
-| [Product Overview](docs/01-product-overview.md) | Mission, goals, user profiles |
-| [Architecture](docs/02-architecture.md) | System design, data flow |
-| [Converter Catalog](docs/03-converter-catalog.md) | Full inventory of every converter |
-| [SEO & Discovery](docs/04-seo-and-discovery.md) | Meta strategy, discoverability |
-| [Accessibility & UX](docs/05-accessibility-and-ux.md) | a11y, keyboard nav, responsive |
-| [Security & Privacy](docs/06-security-and-privacy.md) | Threat model, local-first guarantees |
-| [Performance](docs/07-performance-and-reliability.md) | Metrics, chunking, error handling |
-| [Deployment](docs/08-deployment-and-operations.md) | CI/CD, GitHub Pages, PWA |
-| [Developer Guide](docs/09-developer-guide.md) | Setup, conventions, adding converters |
-| [Contributing](docs/10-governance-and-contributing.md) | PR workflow, code review |
-| [FAQ](docs/11-faq.md) | Common questions |
-| [Changelog](docs/12-changelog-and-release-playbook.md) | Versioning, release process |
-
----
-
-### 🤝 &ensp; Contributing
-
-Read the [Contributing Guide](docs/10-governance-and-contributing.md) and [Developer Guide](docs/09-developer-guide.md), then:
-
-```bash
-git checkout -b feat/my-feature
-git commit -m 'feat: add my feature'
-git push origin feat/my-feature
-```
-
----
-
-<p align="center">
-  <a href="LICENSE"><strong>AGPL-3.0-only</strong></a>
-</p>
+[AGPL-3.0](LICENSE)
