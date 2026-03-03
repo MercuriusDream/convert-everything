@@ -143,6 +143,12 @@ function ConvertPanel({ from, to, onFromChange, onToChange, reuseInput, onReuseC
   const fileInputRef = useRef(null)
   const toolInputRef = useRef(null)
   const toolOutputRef = useRef(null)
+  const formatRunIdRef = useRef(0)
+  const toolRunIdRef = useRef(0)
+  const fileRunIdRef = useRef(0)
+  const activeConverterIdRef = useRef(activeConverter?.id || null)
+  const swappedTimeoutRef = useRef(null)
+  const autoDetectTimeoutRef = useRef(null)
 
   const setFrom = onFromChange
   const setTo = onToChange
@@ -159,6 +165,23 @@ function ConvertPanel({ from, to, onFromChange, onToChange, reuseInput, onReuseC
   const multipleFiles = isToolMode && !!activeConverter.multipleFiles
   // Text-to-text tool: has convert function, no file input, not generator
   const isTextTool = isToolMode && !acceptsFile && !isGenerator
+
+  useEffect(() => {
+    activeConverterIdRef.current = activeConverter?.id || null
+    toolRunIdRef.current += 1
+    fileRunIdRef.current += 1
+  }, [activeConverter])
+
+  useEffect(() => {
+    formatRunIdRef.current += 1
+  }, [isToolMode])
+
+  useEffect(() => {
+    return () => {
+      if (swappedTimeoutRef.current) clearTimeout(swappedTimeoutRef.current)
+      if (autoDetectTimeoutRef.current) clearTimeout(autoDetectTimeoutRef.current)
+    }
+  }, [])
 
   // Reset tool state when converter changes
   useEffect(() => {
@@ -182,8 +205,7 @@ function ConvertPanel({ from, to, onFromChange, onToChange, reuseInput, onReuseC
       setTo(newTargets[0])
     }
     inputRef.current?.focus()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [from])
+  }, [from, to, isToolMode, setTo])
 
   // Handle reuse from history
   useEffect(() => {
@@ -196,14 +218,15 @@ function ConvertPanel({ from, to, onFromChange, onToChange, reuseInput, onReuseC
 
   // Format-pair conversion
   const runFormatConvert = useCallback(async () => {
+    const runId = ++formatRunIdRef.current
     if (isToolMode) return
     if (!input.trim()) {
-      setOutput('')
+      if (runId === formatRunIdRef.current) setOutput('')
       return
     }
     const fn = getConvertFn(from, to)
     if (!fn) {
-      setOutput('')
+      if (runId === formatRunIdRef.current) setOutput('')
       return
     }
     try {
@@ -218,12 +241,15 @@ function ConvertPanel({ from, to, onFromChange, onToChange, reuseInput, onReuseC
       } else {
         result = await fn(input)
       }
+      if (runId !== formatRunIdRef.current || isToolMode) return
       setOutput(result)
       if (result && result !== '(conversion error)') {
         addHistoryEntry(from, to, input.slice(0, 120), result.slice(0, 120))
       }
     } catch {
-      setOutput('(conversion error)')
+      if (runId === formatRunIdRef.current && !isToolMode) {
+        setOutput('(conversion error)')
+      }
     }
   }, [input, from, to, batchMode, isToolMode])
 
@@ -234,15 +260,21 @@ function ConvertPanel({ from, to, onFromChange, onToChange, reuseInput, onReuseC
   // Tool text conversion
   const runToolConvert = useCallback(async (value) => {
     if (!activeConverter) return
+    const converter = activeConverter
+    const converterId = converter.id
+    const runId = ++toolRunIdRef.current
     if (!value && !isGenerator) {
-      setOutput('')
+      if (runId === toolRunIdRef.current && activeConverterIdRef.current === converterId) setOutput('')
       return
     }
     try {
-      const result = await activeConverter.convert(value)
+      const result = await converter.convert(value)
+      if (runId !== toolRunIdRef.current || activeConverterIdRef.current !== converterId) return
       setOutput(result)
     } catch {
-      setOutput('(conversion error)')
+      if (runId === toolRunIdRef.current && activeConverterIdRef.current === converterId) {
+        setOutput('(conversion error)')
+      }
     }
   }, [activeConverter, isGenerator])
 
@@ -293,7 +325,11 @@ function ConvertPanel({ from, to, onFromChange, onToChange, reuseInput, onReuseC
     setTo(from)
     setInput(output)
     setSwapped(true)
-    setTimeout(() => setSwapped(false), 300)
+    if (swappedTimeoutRef.current) clearTimeout(swappedTimeoutRef.current)
+    swappedTimeoutRef.current = setTimeout(() => {
+      setSwapped(false)
+      swappedTimeoutRef.current = null
+    }, 300)
   }, [from, to, output, setFrom, setTo])
 
   const handleCopy = async () => {
@@ -433,7 +469,11 @@ function ConvertPanel({ from, to, onFromChange, onToChange, reuseInput, onReuseC
     if (detected && detected !== from && getTargets(detected).length > 0) {
       setFrom(detected)
       setAutoDetected(true)
-      setTimeout(() => setAutoDetected(false), 1500)
+      if (autoDetectTimeoutRef.current) clearTimeout(autoDetectTimeoutRef.current)
+      autoDetectTimeoutRef.current = setTimeout(() => {
+        setAutoDetected(false)
+        autoDetectTimeoutRef.current = null
+      }, 1500)
     }
   }
 
@@ -551,18 +591,33 @@ function ConvertPanel({ from, to, onFromChange, onToChange, reuseInput, onReuseC
   // File handling for non-media file converters
   const handleSimpleFile = async (file) => {
     if (!file || !activeConverter?.fileConvert) return
+    const converter = activeConverter
+    const converterId = converter.id
+    const runId = ++fileRunIdRef.current
     try {
-      const result = await activeConverter.fileConvert(file)
+      const result = await converter.fileConvert(file)
+      if (runId !== fileRunIdRef.current || activeConverterIdRef.current !== converterId) return
       setOutput(result)
       setInput(file.name)
     } catch {
-      setOutput('(failed to process file)')
+      if (runId === fileRunIdRef.current && activeConverterIdRef.current === converterId) {
+        setOutput('(failed to process file)')
+      }
     }
   }
 
   // File handling for media converters
   const handleMediaFiles = async (files) => {
     if (!files.length || !activeConverter?.fileConvert) return
+    const converter = activeConverter
+    const converterId = converter.id
+    const runId = ++fileRunIdRef.current
+    const filesList = Array.from(files)
+    const updateProgress = (p) => {
+      if (runId === fileRunIdRef.current && activeConverterIdRef.current === converterId) {
+        setProgress(p)
+      }
+    }
     setSelectedFiles(Array.from(files))
     setProcessing(true)
     setProgress(0)
@@ -571,15 +626,20 @@ function ConvertPanel({ from, to, onFromChange, onToChange, reuseInput, onReuseC
     setMediaResult(null)
 
     try {
-      const result = await activeConverter.fileConvert(
-        multipleFiles ? Array.from(files) : files[0],
-        hasTextInput ? textParam : (p) => setProgress(p)
+      const result = await converter.fileConvert(
+        multipleFiles ? filesList : filesList[0],
+        hasTextInput ? textParam : updateProgress
       )
+      if (runId !== fileRunIdRef.current || activeConverterIdRef.current !== converterId) return
       setMediaResult(result)
     } catch (err) {
-      setError(err.message || 'Conversion failed')
+      if (runId === fileRunIdRef.current && activeConverterIdRef.current === converterId) {
+        setError(err.message || 'Conversion failed')
+      }
     } finally {
-      setProcessing(false)
+      if (runId === fileRunIdRef.current && activeConverterIdRef.current === converterId) {
+        setProcessing(false)
+      }
     }
   }
 
@@ -634,14 +694,39 @@ function ConvertPanel({ from, to, onFromChange, onToChange, reuseInput, onReuseC
     setTo(id)
   }, [setTo])
 
+  useEffect(() => {
+    if (isToolMode) setToPickerOpen(false)
+  }, [isToolMode])
+
+  useEffect(() => {
+    setFromPickerOpen(false)
+    setToPickerOpen(false)
+  }, [activeConverter, from, to])
+
+  const toggleFromPicker = useCallback(() => {
+    setFromPickerOpen(open => {
+      const next = !open
+      if (next) setToPickerOpen(false)
+      return next
+    })
+  }, [])
+
+  const toggleToPicker = useCallback(() => {
+    setToPickerOpen(open => {
+      const next = !open
+      if (next) setFromPickerOpen(false)
+      return next
+    })
+  }, [])
+
   return (
     <div className="convert-panel">
-      <div className="convert-selectors">
-        <div className={`convert-selector-side${autoDetected ? ' auto-detected' : ''}`} ref={fromWrapperRef} style={{ position: 'relative' }}>
+      <div className={`convert-selectors${isToolMode ? ' tool-mode' : ''}`}>
+        <div className={`convert-selector-side convert-selector-from${autoDetected ? ' auto-detected' : ''}`} ref={fromWrapperRef}>
           <button
             className="picker-trigger"
             onMouseDown={(e) => e.stopPropagation()}
-            onClick={() => setFromPickerOpen(o => !o)}
+            onClick={toggleFromPicker}
             aria-expanded={fromPickerOpen}
           >
             <span className="picker-trigger-label">{fromLabel}</span>
@@ -656,6 +741,7 @@ function ConvertPanel({ from, to, onFromChange, onToChange, reuseInput, onReuseC
             onSelectFormat={handleFromSelectFormat}
             onSelectConverter={handleFromSelectConverter}
             mode="from"
+            align="left"
             availableFormatIds={allFromIds}
             currentFormatValue={isToolMode ? null : from}
             currentConverterValue={isToolMode ? activeConverter.id : null}
@@ -674,11 +760,11 @@ function ConvertPanel({ from, to, onFromChange, onToChange, reuseInput, onReuseC
                 <path d="M5 4l6 0M11 4l-2.5 2.5M11 4l-2.5-2.5M11 12l-6 0M5 12l2.5-2.5M5 12l2.5 2.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
             </button>
-            <div className="convert-selector-side" ref={toWrapperRef} style={{ position: 'relative' }}>
+            <div className="convert-selector-side convert-selector-to" ref={toWrapperRef}>
               <button
                 className="picker-trigger"
                 onMouseDown={(e) => e.stopPropagation()}
-                onClick={() => setToPickerOpen(o => !o)}
+                onClick={toggleToPicker}
                 aria-expanded={toPickerOpen}
               >
                 <span className="picker-trigger-label">{toLabel}</span>
@@ -692,29 +778,32 @@ function ConvertPanel({ from, to, onFromChange, onToChange, reuseInput, onReuseC
                 onSelectFormat={handleToSelectFormat}
                 onSelectConverter={() => {}}
                 mode="to"
+                align="right"
                 availableFormatIds={toIds}
                 currentFormatValue={to}
                 currentConverterValue={null}
               />
             </div>
-            <button
-              className={`batch-toggle${batchMode ? ' active' : ''}`}
-              onClick={() => setBatchMode(b => !b)}
-              title={batchMode ? 'Batch mode: each line converted separately' : 'Enable batch mode'}
-            >
-              <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                <path d="M3 4h8M3 7h8M3 10h8" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
-              </svg>
-            </button>
-            <button
-              className={`batch-toggle${isPairFav ? ' active' : ''}`}
-              onClick={toggleFavPair}
-              title={isPairFav ? 'Remove from favorites' : 'Save this pair'}
-            >
-              <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                <path d="M7 1.5l1.76 3.57 3.94.57-2.85 2.78.67 3.93L7 10.57l-3.52 1.78.67-3.93L1.3 5.64l3.94-.57L7 1.5z" stroke="currentColor" strokeWidth="1.1" strokeLinejoin="round" fill={isPairFav ? 'currentColor' : 'none'}/>
-              </svg>
-            </button>
+            <div className="selector-extra-actions">
+              <button
+                className={`batch-toggle${batchMode ? ' active' : ''}`}
+                onClick={() => setBatchMode(b => !b)}
+                title={batchMode ? 'Batch mode: each line converted separately' : 'Enable batch mode'}
+              >
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                  <path d="M3 4h8M3 7h8M3 10h8" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
+                </svg>
+              </button>
+              <button
+                className={`batch-toggle${isPairFav ? ' active' : ''}`}
+                onClick={toggleFavPair}
+                title={isPairFav ? 'Remove from favorites' : 'Save this pair'}
+              >
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                  <path d="M7 1.5l1.76 3.57 3.94.57-2.85 2.78.67 3.93L7 10.57l-3.52 1.78.67-3.93L1.3 5.64l3.94-.57L7 1.5z" stroke="currentColor" strokeWidth="1.1" strokeLinejoin="round" fill={isPairFav ? 'currentColor' : 'none'}/>
+                </svg>
+              </button>
+            </div>
           </>
         )}
 

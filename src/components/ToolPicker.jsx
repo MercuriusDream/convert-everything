@@ -110,6 +110,7 @@ function ToolPickerContent({
   onSelectFormat,
   onSelectConverter,
   mode, // 'from' | 'to'
+  align = 'left',
   availableFormatIds,
   currentFormatValue,
   currentConverterValue,
@@ -336,7 +337,7 @@ function ToolPickerContent({
   const hasTabTools = tabTools.length > 0
 
   return (
-    <div className="tool-picker" ref={overlayRef}>
+    <div className={`tool-picker${align === 'right' ? ' align-right' : ''}`} ref={overlayRef}>
       <div className="tool-picker-search">
         <svg className="tool-picker-search-icon" width="15" height="15" viewBox="0 0 15 15" fill="none">
           <circle cx="6.5" cy="6.5" r="5" stroke="currentColor" strokeWidth="1.3"/>

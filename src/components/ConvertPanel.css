@@ -18,6 +18,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
+  position: relative;
 }
 
 .picker-trigger {
@@ -138,6 +139,13 @@
   color: var(--text);
   background: var(--bg-raised);
   box-shadow: 0 1px 0 var(--shadow);
+}
+
+.selector-extra-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
 }
 
 .tool-mode-actions {
@@ -556,7 +564,42 @@
 
 @media (max-width: 640px) {
   .convert-selectors {
-    flex-wrap: wrap;
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    gap: 8px;
+    align-items: center;
+  }
+
+  .convert-selectors.tool-mode {
+    grid-template-columns: 1fr auto;
+  }
+
+  .convert-selector-from {
+    grid-column: 1;
+  }
+
+  .convert-selectors.tool-mode .convert-selector-from {
+    grid-column: 1;
+  }
+
+  .swap-btn {
+    grid-column: 2;
+    justify-self: center;
+  }
+
+  .convert-selector-to {
+    grid-column: 3;
+  }
+
+  .selector-extra-actions {
+    grid-column: 1 / -1;
+    justify-self: end;
+  }
+
+  .convert-selectors.tool-mode .tool-mode-actions {
+    grid-column: 2;
+    justify-self: end;
+    margin-left: 0;
   }
 
   .convert-textareas {
